@@ -2,7 +2,7 @@
  # @ Create Time: 2023-12-10 14:56:12.646697
 '''
 
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, dash_table
 import plotly.express as px
 import pandas as pd
 
