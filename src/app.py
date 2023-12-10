@@ -6,6 +6,25 @@ from dash import Dash, html, dcc
 import plotly.express as px
 import pandas as pd
 
+# Load required Python packages
+import os, requests
+
+# Function to download remote file to the disk
+def urlDownload(urlLink):
+  with requests.get(urlLink, stream=True) as r:
+    fileSize = int(r.headers.get('Content-Length'))
+    fileName = r.headers.get('Content-Disposition').split("filename=")[1]
+    if not os.path.exists(fileName) or os.path.getsize(fileName) != fileSize:
+      block_size = 1024
+      with open(fileName, 'wb') as file:
+        for data in r.iter_content(block_size):
+          file.write(data)
+    return fileName
+
+# Download the newest data
+urlLocation = 'https://aqicn.org/data-platform/covid19/report/39374-7694ec07/'
+csvFile = urlDownload(urlLocation)
+
 app = Dash(__name__, title="DashTest")
 
 # Declare server for Heroku deployment. Needed for Procfile.
