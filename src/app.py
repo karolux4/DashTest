@@ -180,19 +180,19 @@ def update_forecast(city_chosen):
     trainingDays = (maxDate - minDate).days - forecastingRange
 
     #Humidity
-    humidityModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+    humidityModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=False)
     humidityModel.fit(humidityFullData)
     humidityFuture = humidityModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
     humidityForecast = humidityModel.predict(humidityFuture)
 
     #Temperature
-    temperatureModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+    temperatureModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=False)
     temperatureModel.fit(temperatureFullData)
     temperatureFuture = temperatureModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
     temperatureForecast = temperatureModel.predict(temperatureFuture)
 
     #API - multi
-    APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+    APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=False)
     APIModel.add_regressor('temperature')
     APIModel.add_regressor('humidity')
     APIModel.fit(fullData)
