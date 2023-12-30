@@ -31,7 +31,7 @@ urlLocation = 'https://aqicn.org/data-platform/covid19/report/39374-7694ec07/'
 csvFile = urlDownload(urlLocation)
 
 # Create lists of year and quarter names
-yNames = [str(i) for i in range(2021, 2022)]
+yNames = [str(i) for i in range(2020, 2022)]
 qNames = ["Q" + str(i) for i in range(1, 5)]
 
 # Create a data frame with the url locations and year/quarter combinations
