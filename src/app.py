@@ -43,6 +43,7 @@ DF = pd.DataFrame({'urlLocations': DF.agg(''.join, axis=1)})
 
 # Download legacy data (sequentially)
 csvFiles = DF.apply(lambda x : urlDownload(x[0]), axis=1)
+print('COMPLETED DOWNLOAD')
 
 # Define the columns to load
 meta_cols = ['Date', 'Country', 'City', 'Specie']
