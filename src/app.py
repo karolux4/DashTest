@@ -100,7 +100,7 @@ app.layout = html.Div([
             ]),
              dcc.Tab(label='Forecasts', children=[
                 dcc.Graph(figure={}, id='city-forecast', responsive=True),
-                html.Br(),
+                dcc.Graph(figure={}, id='city-forecast-components', responsive=True, style={'height': '70vh'}),
                 html.Label('Backtesting errors'),
                 dash_table.DataTable(data=[], id='city-forecast-errors'),
             ])
@@ -159,6 +159,7 @@ def filter_year_heatmap(city_chosen):
 
 @callback(
     Output(component_id='city-forecast', component_property='figure'),
+    Output(component_id='city-forecast-components', component_property='figure'),
     Output(component_id='city-forecast-errors', component_property='data'),
     Input(component_id='controls-city-dropdown', component_property='value')
 )
@@ -204,11 +205,13 @@ def update_forecast(city_chosen):
     fig.update_xaxes(title_text='Date')
     fig.update_yaxes(title_text='API')
 
+    figForecastComponents = plot_components_plotly(APIModel, APIForecast)
+
     #ERRORS
     df_cv = cross_validation(APIModel, initial=f'{trainingDays} days', period=f'{forecastingRange} days', horizon = f'{forecastingRange} days')
     df_p = performance_metrics(df_cv)
     
-    return fig, df_p.tail(1)[['mse','rmse','mae','mape','mdape','smape']].to_dict('records')
+    return fig, figForecastComponents, df_p.tail(1)[['mse','rmse','mae','mape','mdape','smape']].to_dict('records')
 
 
 # Run the app
