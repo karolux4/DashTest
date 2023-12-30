@@ -47,17 +47,19 @@ DF = pd.DataFrame({'urlLocations': DF.agg(''.join, axis=1)})
 DDF = dd.from_pandas(DF.iloc[:2], npartitions=mp.cpu_count())
 csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
 collected = gc.collect()
-print('COLLECTED: ' + collected)
+print(f'COLLECTED: {collected}')
 print('DOWNLOADED FIRST 2')
 
 DDF = dd.from_pandas(DF.iloc[2:4], npartitions=mp.cpu_count())
 csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
-print('COLLECTED: ' + collected)
+collected = gc.collect()
+print(f'COLLECTED: {collected}')
 print('DOWNLOADED SECOND 2')
 
 DDF = dd.from_pandas(DF.iloc[4:6], npartitions=mp.cpu_count())
 csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
-print('COLLECTED: ' + collected)
+collected = gc.collect()
+print(f'COLLECTED: {collected}')
 print('DOWNLOADED THIRD 2')
 
 
