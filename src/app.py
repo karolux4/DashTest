@@ -3,6 +3,7 @@ from dash import Dash, html, dash_table, dcc, callback, Output, Input
 import pandas as pd
 import plotly.express as px
 import dask.dataframe as dd
+import multiprocessing as mp
 import prophet
 from prophet.diagnostics import performance_metrics, cross_validation
 from prophet.plot import plot_plotly, plot_components_plotly
@@ -41,12 +42,9 @@ DF.insert(loc=0, column='urlLocation', value=urlLocation)
 # Combine url location and year/quarter combinations into a single column
 DF = pd.DataFrame({'urlLocations': DF.agg(''.join, axis=1)})
 
-# Download legacy data (sequentially)
-csvFiles = DF.head(4).apply(lambda x : urlDownload(x[0]), axis=1)
-print('COMPLETED DOWNLOAD FIRST 4')
-
-csvFiles = DF.iloc[4:8].apply(lambda x : urlDownload(x[0]), axis=1)
-print('COMPLETED DOWNLOAD SECOND 4')
+# Download legacy data (in parallel)
+DDF = dd.from_pandas(DF, npartitions=mp.cpu_count())
+csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
 
 
 # Define the columns to load
@@ -118,10 +116,10 @@ app.layout = html.Div([
                 dcc.Graph(figure={}, id='city-year-matrix'),
             ]),
              dcc.Tab(label='Forecasts', children=[
-                dcc.Graph(figure={}, id='city-forecast', responsive=True),
-                html.Br(),
-                html.Label('Backtesting errors'),
-                dash_table.DataTable(data=[], id='city-forecast-errors'),
+                # dcc.Graph(figure={}, id='city-forecast', responsive=True),
+                # html.Br(),
+                # html.Label('Backtesting errors'),
+                # dash_table.DataTable(data=[], id='city-forecast-errors'),
             ])
         ])
 ])
@@ -176,71 +174,71 @@ def filter_year_heatmap(city_chosen):
                     x=list(map(str, list(groupedCityData.groups.keys()))))
     return fig
 
-@callback(
-    Output(component_id='city-forecast', component_property='figure'),
-    Input(component_id='controls-city-dropdown', component_property='value')
-)
-def update_forecast(city_chosen):
-    fullData = dataTableAPI[(dataTableAPI['City']==city_chosen)][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
-    fullData = fullData.reset_index()
-    fullData = fullData.dropna(subset=["temperature", "humidity"])
-    temperatureFullData = fullData
-    humidityFullData = fullData
-    fullData = fullData.rename(columns={'Date':'ds', 'API':'y'})
-    temperatureFullData = temperatureFullData.rename(columns={'Date':'ds', 'temperature':'y'})
-    humidityFullData = humidityFullData.rename(columns={'Date':'ds', 'humidity':'y'})
-    forecastingRange = 28
+# @callback(
+#     Output(component_id='city-forecast', component_property='figure'),
+#     Input(component_id='controls-city-dropdown', component_property='value')
+# )
+# def update_forecast(city_chosen):
+#     fullData = dataTableAPI[(dataTableAPI['City']==city_chosen)][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
+#     fullData = fullData.reset_index()
+#     fullData = fullData.dropna(subset=["temperature", "humidity"])
+#     temperatureFullData = fullData
+#     humidityFullData = fullData
+#     fullData = fullData.rename(columns={'Date':'ds', 'API':'y'})
+#     temperatureFullData = temperatureFullData.rename(columns={'Date':'ds', 'temperature':'y'})
+#     humidityFullData = humidityFullData.rename(columns={'Date':'ds', 'humidity':'y'})
+#     forecastingRange = 28
 
-    #Humidity
-    humidityModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
-    humidityModel.fit(humidityFullData)
-    humidityFuture = humidityModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
-    humidityForecast = humidityModel.predict(humidityFuture)
+#     #Humidity
+#     humidityModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+#     humidityModel.fit(humidityFullData)
+#     humidityFuture = humidityModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
+#     humidityForecast = humidityModel.predict(humidityFuture)
 
-    #Temperature
-    temperatureModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
-    temperatureModel.fit(temperatureFullData)
-    temperatureFuture = temperatureModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
-    temperatureForecast = temperatureModel.predict(temperatureFuture)
+#     #Temperature
+#     temperatureModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+#     temperatureModel.fit(temperatureFullData)
+#     temperatureFuture = temperatureModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
+#     temperatureForecast = temperatureModel.predict(temperatureFuture)
 
-    #API - multi
-    APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
-    APIModel.add_regressor('temperature')
-    APIModel.add_regressor('humidity')
-    APIModel.fit(fullData)
-    APIFuture = APIModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
-    APIFuture['temperature']=temperatureForecast['yhat']
-    APIFuture['humidity']=humidityForecast['yhat']
-    APIForecast = APIModel.predict(APIFuture)
-    fig = plot_plotly(APIModel, APIForecast)
-    fig.update_layout(title_text=f'Forecast for {city_chosen} for next 28 days', title_font_size=16)
-    fig.update_xaxes(title_text='Date')
-    fig.update_yaxes(title_text='API')
-    return fig
+#     #API - multi
+#     APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+#     APIModel.add_regressor('temperature')
+#     APIModel.add_regressor('humidity')
+#     APIModel.fit(fullData)
+#     APIFuture = APIModel.make_future_dataframe(periods=forecastingRange, freq = 'd')
+#     APIFuture['temperature']=temperatureForecast['yhat']
+#     APIFuture['humidity']=humidityForecast['yhat']
+#     APIForecast = APIModel.predict(APIFuture)
+#     fig = plot_plotly(APIModel, APIForecast)
+#     fig.update_layout(title_text=f'Forecast for {city_chosen} for next 28 days', title_font_size=16)
+#     fig.update_xaxes(title_text='Date')
+#     fig.update_yaxes(title_text='API')
+#     return fig
 
-@callback(
-    Output(component_id='city-forecast-errors', component_property='data'),
-    Input(component_id='controls-city-dropdown', component_property='value')
-)
-def update_forecast_errors(city_chosen):
-    fullData = dataTableAPI[(dataTableAPI['City']==city_chosen)][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
-    fullData = fullData.reset_index()
-    fullData = fullData.dropna(subset=["temperature", "humidity"])
-    fullData = fullData.rename(columns={'Date':'ds', 'API':'y'})
-    forecastingRange = 28
-    minDate = datetime.strptime(fullData['ds'].agg(['min', 'max'])[0], '%Y-%m-%d').date()
-    maxDate = datetime.strptime(fullData['ds'].agg(['min', 'max'])[1], '%Y-%m-%d').date()
-    trainingDays = (maxDate - minDate).days - forecastingRange
+# @callback(
+#     Output(component_id='city-forecast-errors', component_property='data'),
+#     Input(component_id='controls-city-dropdown', component_property='value')
+# )
+# def update_forecast_errors(city_chosen):
+#     fullData = dataTableAPI[(dataTableAPI['City']==city_chosen)][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
+#     fullData = fullData.reset_index()
+#     fullData = fullData.dropna(subset=["temperature", "humidity"])
+#     fullData = fullData.rename(columns={'Date':'ds', 'API':'y'})
+#     forecastingRange = 28
+#     minDate = datetime.strptime(fullData['ds'].agg(['min', 'max'])[0], '%Y-%m-%d').date()
+#     maxDate = datetime.strptime(fullData['ds'].agg(['min', 'max'])[1], '%Y-%m-%d').date()
+#     trainingDays = (maxDate - minDate).days - forecastingRange
 
-    #API - multi
-    APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
-    APIModel.add_regressor('temperature')
-    APIModel.add_regressor('humidity')
-    APIModel.fit(fullData)
+#     #API - multi
+#     APIModel = prophet.Prophet(weekly_seasonality=True, daily_seasonality=True)
+#     APIModel.add_regressor('temperature')
+#     APIModel.add_regressor('humidity')
+#     APIModel.fit(fullData)
 
-    df_cv = cross_validation(APIModel, initial=f'{trainingDays} days', period=f'{forecastingRange} days', horizon = f'{forecastingRange} days')
-    df_p = performance_metrics(df_cv)
-    return df_p.tail(1)[['mse','rmse','mae','mape','mdape','smape']].to_dict('records')
+#     df_cv = cross_validation(APIModel, initial=f'{trainingDays} days', period=f'{forecastingRange} days', horizon = f'{forecastingRange} days')
+#     df_p = performance_metrics(df_cv)
+#     return df_p.tail(1)[['mse','rmse','mae','mape','mdape','smape']].to_dict('records')
 
 
 # Run the app
