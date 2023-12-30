@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 from datetime import datetime
+import gc
 
 # Function to download remote file to the disk
 def urlDownload(urlLink):
@@ -43,8 +44,21 @@ DF.insert(loc=0, column='urlLocation', value=urlLocation)
 DF = pd.DataFrame({'urlLocations': DF.agg(''.join, axis=1)})
 
 # Download legacy data (in parallel)
-DDF = dd.from_pandas(DF, npartitions=mp.cpu_count())
+DDF = dd.from_pandas(DF.iloc[:2], npartitions=mp.cpu_count())
 csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
+collected = gc.collect()
+print('COLLECTED: ' + collected)
+print('DOWNLOADED FIRST 2')
+
+DDF = dd.from_pandas(DF.iloc[2:4], npartitions=mp.cpu_count())
+csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
+print('COLLECTED: ' + collected)
+print('DOWNLOADED SECOND 2')
+
+DDF = dd.from_pandas(DF.iloc[4:6], npartitions=mp.cpu_count())
+csvFiles = DDF.apply(lambda x : urlDownload(x[0]), axis=1, meta=pd.Series(dtype="str")).compute(scheduler='threads')
+print('COLLECTED: ' + collected)
+print('DOWNLOADED THIRD 2')
 
 
 # Define the columns to load
