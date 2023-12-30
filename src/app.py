@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from itertools import product
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 # Function to download remote file to the disk
 def urlDownload(urlLink):
@@ -162,7 +163,9 @@ def filter_year_heatmap(city_chosen):
     Input(component_id='controls-city-dropdown', component_property='value')
 )
 def update_forecast(city_chosen):
-    fullData = dataTableAPI[(dataTableAPI['City']==city_chosen)][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
+    currentDate = datetime.today()
+    prevDate = currentDate - relativedelta(years=2)
+    fullData = dataTableAPI[(dataTableAPI['City']==city_chosen) & (dataTableAPI['Date']>=prevDate.strftime("%Y-%m-%d"))][['Date', 'API', 'pm25', 'pm10', 'no2', 'co', 'o3', 'so2', 'temperature', 'humidity']]
     fullData = fullData.reset_index()
     fullData = fullData.dropna(subset=["temperature", "humidity"])
     temperatureFullData = fullData
