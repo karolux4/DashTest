@@ -43,7 +43,7 @@ newTable = DF[selectIT].rename(columns={main_column: 'Value'})
 
 # Read legacy data files (sequentially)
 fileNamesQ = [f for f in os.listdir('.') if re.match(r'^.*Q\d.csv$', f)]
-DF = pd.concat((pd.read_csv(f, skiprows=4, usecols=selected_cols) for f in fileNamesQ), ignore_index=True)
+DF = pd.concat((pd.read_csv(f, skiprows=0, usecols=selected_cols) for f in fileNamesQ), ignore_index=True)
 selectIT = DF['Country'].isin(['IT'])
 oldTable = DF[selectIT].rename(columns={main_column: 'Value'})
 
