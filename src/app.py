@@ -42,8 +42,12 @@ DF.insert(loc=0, column='urlLocation', value=urlLocation)
 DF = pd.DataFrame({'urlLocations': DF.agg(''.join, axis=1)})
 
 # Download legacy data (sequentially)
-csvFiles = DF.apply(lambda x : urlDownload(x[0]), axis=1)
-print('COMPLETED DOWNLOAD')
+csvFiles = DF.head(4).apply(lambda x : urlDownload(x[0]), axis=1)
+print('COMPLETED DOWNLOAD FIRST 4')
+
+csvFiles = DF.iloc[4:8].apply(lambda x : urlDownload(x[0]), axis=1)
+print('COMPLETED DOWNLOAD SECOND 4')
+
 
 # Define the columns to load
 meta_cols = ['Date', 'Country', 'City', 'Specie']
